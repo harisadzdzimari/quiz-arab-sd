@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Al-Arabiya Arena: Master Duel</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Amiri:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            /* TEMA SIANG */
+            --bg-body: #f0f4f8;
+            --bg-card: #ffffff;
+            --text-main: #2d3436;
+            --text-sub: #636e72;
+            --primary: #6c5ce7;
+            --accent: #00cec9;
+            --border: #dfe6e9;
+            --shadow: 0 10px 30px rgba(0,0,0,0.08);
+            
+            --p1-bg: #fff5f5;
+            --p1-text: #e17055;
+            --p2-bg: #f0f8ff;
+            --p2-text: #0984e3;
+            
+            --timer-bg: #dfe6e9;
+            --slot-bg: #f8f9fa;
+        }
+
+        /* TEMA MALAM */
+        body.dark-mode {
+            --bg-body: #1e1e2e;
+            --bg-card: #2d2d42;
+            --text-main: #ffffff;
+            --text-sub: #a6a6c0;
+            --primary: #a29bfe;
+            --accent: #81ecec;
+            --border: #444466;
+            --shadow: 0 10px 30px rgba(0,0,0,0.4);
+
+            --p1-bg: #3d2c2c;
+            --p1-text: #ff7675;
+            --p2-bg: #2c303d;
+            --p2-text: #74b9ff;
+            
+            --timer-bg: #444466;
+            --slot-bg: #35354f;
+        }
+
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-body);
+            transition: background 0.3s, color 0.3s;
+            margin: 0;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #app-frame {
+            width: 98vw;
+            height: 95vh;
+            max-width: 1200px;
+            background: var(--bg-card);
+            border-radius: 30px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            border: 2px solid var(--border);
+            transition: background 0.3s, border 0.3s;
+        }
+
+        /* --- HEADER --- */
+        header {
+            height: 70px;
+            padding: 0 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border);
+            z-index: 50;
+            background: var(--bg-card);
+            transition: background 0.3s;
+        }
+
+        .nav-grp { display: flex; gap: 10px; }
+        .btn-nav {
+            width: 45px; height: 45px; border-radius: 12px; border: 2px solid var(--border);
+            background: var(--bg-card); color: var(--text-main); font-size: 20px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
+        }
+        .btn-nav:hover { border-color: var(--primary); color: var(--primary); transform: scale(1.05); }
+        
+        .logo { 
+            font-weight: 900; font-size: 24px; color: var(--primary); letter-spacing: 1px; 
+            text-transform: uppercase;
+        }
+
+        .right-controls { display: flex; gap: 10px; align-items: center; }
+        .theme-btn { font-size: 24px; cursor: pointer; background: none; border: none; padding: 5px; }
+
+        /* --- SCREENS --- */
+        .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
+        .screen.active { display: flex; animation: fade 0.3s ease; }
+        @keyframes fade { from{opacity:0} to{opacity:1} }
+
+        /* --- MENU --- */
+        #menu-screen { align-items: center; justify-content: center; padding: 20px; overflow-y: auto; position: relative; }
+        .menu-head { text-align: center; margin-bottom: 30px; }
+        .menu-head h2 { color: var(--text-main); margin: 0 0 5px 0; font-size: 32px; }
+        .menu-head p { color: var(--text-sub); margin: 0; font-weight: bold; }
+
+        .menu-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 20px; width: 100%; max-width: 900px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: var(--bg-card); border: 2px solid var(--border);
+            border-radius: 20px; padding: 25px; text-align: center;
+            cursor: pointer; transition: 0.2s;
+            display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+        }
+        .card:hover { transform: translateY(-8px); border-color: var(--primary); box-shadow: var(--shadow); }
+        
+        .c-icon { font-size: 40px; margin-bottom: 10px; }
+        .c-title { font-weight: 800; font-size: 18px; color: var(--text-main); margin: 0; }
+        .c-desc { font-size: 13px; color: var(--text-sub); margin-top: 5px; font-weight: 600; }
+
+        .card.duel { 
+            grid-column: span 3; 
+            background: linear-gradient(135deg, rgba(108,92,231,0.1), rgba(0,206,201,0.1)); 
+            border-color: var(--primary); 
+            flex-direction: row; justify-content: center; gap: 20px;
+        }
+
+        .footer-credit {
+            position: absolute; bottom: 10px; width: 100%; text-align: center;
+            font-weight: bold; color: var(--text-sub); opacity: 0.5; font-size: 14px;
+        }
+
+        /* --- SOLO GAME --- */
+        #solo-screen { padding: 20px; }
+        .solo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        
+        .timer-capsule {
+            background: var(--timer-bg); padding: 5px 20px; border-radius: 50px;
+            display: flex; align-items: center; gap: 10px; color: var(--text-main); font-weight: bold;
+            font-size: 20px;
+        }
+        .timer-icon { animation: pulse 1s infinite; }
+        
+        .timer-bar-bg { width: 100%; height: 10px; background: var(--timer-bg); border-radius: 5px; overflow: hidden; margin-bottom: 20px; }
+        .timer-bar-fill { height: 100%; background: var(--primary); width: 100%; transition: width 1s linear; }
+
+        .solo-split { display: flex; width: 100%; height: 100%; gap: 30px; }
+        
+        /* Soal */
+        .q-panel {
+            flex: 1; background: var(--bg-body); border-radius: 25px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 2px dashed var(--border); padding: 20px; text-align: center;
+        }
+        .q-img { width: 120px; height: 120px; object-fit: contain; margin-bottom: 15px; display: none; }
+        .q-arab { font-family: 'Amiri', serif; font-size: 60px; color: var(--primary); margin: 0; line-height: 1.2; direction: rtl; }
+        .q-latin { font-size: 24px; font-weight: 800; color: var(--text-sub); margin-top: 10px; }
+        .q-hint { 
+            background: #fff3cd; color: #856404; padding: 5px 15px; 
+            border-radius: 20px; font-size: 16px; margin-top: 15px; font-weight: bold; display: none; 
+        }
+
+        /* Jawaban */
+        .a-panel { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        
+        /* Slot: RTL (Kanan ke Kiri) */
+        .slots { 
+            display: flex; gap: 10px; justify-content: center; margin-bottom: 30px; 
+            min-height: 70px; direction: rtl; 
+        }
+        .slot {
+            width: 60px; height: 60px; border-radius: 15px; border: 2px dashed var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Amiri'; font-size: 32px; color: var(--text-main); background: var(--slot-bg);
+        }
+        .slot.filled { background: var(--bg-card); color: var(--primary); border-color: var(--primary); animation: pop 0.3s; box-shadow: 0 5px 15px rgba(108, 92, 231, 0.2); }
+
+        .keyboard { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .key {
+            width: 65px; height: 65px; border-radius: 15px; border: none;
+            background: var(--bg-card); box-shadow: 0 4px 0 var(--border);
+            color: var(--text-main); font-family: 'Amiri'; font-size: 28px; cursor: pointer;
+            transition: 0.1s;
+        }
+        .key:active { transform: translateY(4px); box-shadow: none; }
+
+        /* --- DUEL GAME --- */
+        #duel-screen { flex-direction: row; position: relative; }
+        
+        .p-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; transition: 0.2s; }
+        .p1 { background: var(--p1-bg); border-right: 2px solid var(--bg-card); }
+        .p2 { background: var(--p2-bg); border-left: 2px solid var(--bg-card); }
+
+        .p-info { position: absolute; top: 20px; text-align: center; width: 100%; }
+        .p-score { font-size: 70px; font-weight: 900; line-height: 1; opacity: 0.4; margin: 0; }
+        .p-lives { font-size: 24px; letter-spacing: 3px; margin-top: 5px; }
+        .p1 .p-score { color: var(--p1-text); }
+        .p2 .p-score { color: var(--p2-text); }
+
+        /* Center Hub */
+        .duel-hub {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 240px; background: var(--bg-card); border-radius: 30px;
+            padding: 25px; text-align: center; box-shadow: var(--shadow); z-index: 10;
+            border: 4px solid var(--border);
+        }
+        
+        .hub-timer {
+            width: 65px; height: 65px; border-radius: 50%;
+            background: var(--accent); color: white;
+            font-size: 26px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            margin: -60px auto 10px; border: 5px solid var(--bg-card);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .hub-q { font-size: 24px; font-weight: 800; color: var(--text-main); }
+        .hub-img { width: 80px; height: 80px; object-fit: contain; margin-bottom: 10px; }
+
+        /* Duel Options */
+        .duel-opts { display: flex; flex-direction: column; gap: 15px; width: 80%; z-index: 5; margin-top: 60px; }
+        .d-btn {
+            width: 100%; padding: 18px; border-radius: 18px; border: none;
+            background: var(--bg-card); font-family: 'Amiri'; font-size: 26px; font-weight: bold;
+            color: var(--text-main); cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.05);
+            transition: 0.1s; direction: rtl;
+        }
+        .d-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: none; }
+        
+        .correct { background: #2ecc71 !important; color: white !important; }
+        .wrong { background: #ff7675 !important; color: white !important; animation: shake 0.3s; }
+
+        /* Overlay */
+        #cd-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.85); z-index: 100;
+            display: none; align-items: center; justify-content: center; flex-direction: column;
+        }
+        .cd-text { font-size: 120px; font-weight: 900; color: var(--accent); animation: pop 0.5s infinite; text-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+
+        /* Modal */
+        .modal { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); z-index: 200; display: none; align-items: center; justify-content: center; }
+        .modal-box { background: var(--bg-card); padding: 40px; border-radius: 30px; text-align: center; width: 450px; animation: pop 0.4s; }
+        .btn-modal { width: 100%; padding: 15px; border-radius: 50px; background: var(--primary); color: white; border: none; font-size: 18px; font-weight: bold; margin-top: 20px; cursor: pointer; }
+
+        @keyframes pop { 0%{transform:scale(0.5)} 80%{transform:scale(1.1)} 100%{transform:scale(1)} }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+        @keyframes pulse { 0%{transform:scale(1)} 50%{transform:scale(1.2)} 100%{transform:scale(1)} }
+        @keyframes bouncePop { 0%{transform:scale(0.5); opacity:0} 50%{transform:scale(1.2); opacity:1} 100%{transform:scale(1)} }
+        
+        .flash-red { animation: flash 0.3s; }
+        @keyframes flash { 0%,100%{background:inherit} 50%{background:rgba(255,118,117,0.3)} }
+
+    </style>
+</head>
+<body>
+
+<div id="app-frame">
+    
+    <header>
+        <div class="nav-grp">
+            <button class="btn-nav" id="btn-home" onclick="goHome()" title="Menu">🏠</button>
+            <button class="btn-nav" id="btn-back" onclick="goBack()" title="Kembali">⬅️</button>
+        </div>
+        <div class="logo">AL-ARABIYA ARENA</div>
+        <div class="right-controls">
+            <button class="theme-btn" onclick="toggleTheme()" title="Mode Malam">🌗</button>
+            <select id="music-sel" onchange="toggleMusic(this.value)" style="padding:5px 10px; border-radius:15px; border:1px solid var(--border); background:var(--bg-card); color:var(--text-main); font-weight:bold; cursor:pointer;">
+                <option value="">🔇 Mati</option>
+                <option value="musik1.mp3">🎵 Musik 1</option>
+                <option value="musik2.mp3">🎵 Musik 2</option>
+            </select>
+        </div>
+    </header>
+
+    <div id="menu-screen" class="screen active">
+        <div class="menu-head">
+            <h2>Ahlan Wa Sahlan! 👋</h2>
+            <p>Pilih mode permainan</p>
+        </div>
+
+        <div class="menu-grid">
+            <div class="card" onclick="startSolo('urut')">
+                <div class="c-icon">🔤</div>
+                <h3 class="c-title">Urut Huruf</h3>
+                <p class="c-desc">Alif - Ya'</p>
+            </div>
+            <div class="card" onclick="startSolo('harakat')">
+                <div class="c-icon">🗣️</div>
+                <h3 class="c-title">Tebak Harakat</h3>
+                <p class="c-desc">Fathah, Kasrah...</p>
+            </div>
+            <div class="card" onclick="startSolo('kata')">
+                <div class="c-icon">📖</div>
+                <h3 class="c-title">Susun Kata</h3>
+                <p class="c-desc">Kosakata Lengkap</p>
+            </div>
+
+            <div class="card duel" onclick="preStartDuel()">
+                <div class="c-icon">⚔️</div>
+                <div>
+                    <h3 class="c-title">DUEL ARENA</h3>
+                    <p class="c-desc">2 Pemain • Split Screen</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-credit">By Haris Adz Dzimari</div>
+    </div>
+
+    <div id="solo-screen" class="screen">
+        <div class="solo-header">
+            <div id="solo-lives" style="font-size:24px;">❤️❤️❤️</div>
+            <div class="timer-capsule">
+                <div class="timer-icon">⏳</div>
+                <div id="solo-time-txt">30</div>
+            </div>
+            <div style="font-weight:bold; color:var(--text-sub);">LEVEL <span id="solo-lvl">1</span></div>
+        </div>
+        <div class="timer-bar-bg"><div class="timer-bar-fill" id="solo-bar"></div></div>
+
+        <div class="solo-split">
+            <div class="q-panel">
+                <div class="q-hint" id="q-hint"></div>
+                <img id="q-img" class="q-img">
+                <h1 class="q-arab" id="q-arab">...</h1>
+                <div class="q-latin" id="q-latin">...</div>
+            </div>
+            
+            <div class="a-panel">
+                <div id="solo-slots" class="slots"></div>
+                <div id="solo-keys" class="keyboard"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="duel-screen" class="screen">
+        <div id="cd-overlay">
+            <div style="color:white; font-size:30px; font-weight:bold; margin-bottom:20px;">SIAP...</div>
+            <div class="cd-text" id="cd-txt">3</div>
+        </div>
+
+        <div class="duel-hub">
+            <div class="hub-timer">
+                <div style="font-size:12px; position:absolute; margin-top:-30px;">⏱️</div>
+                <span id="duel-timer">10</span>
+            </div>
+            <div style="font-size:12px; color:var(--text-sub); margin-bottom:5px; font-weight:bold;">TEBAK:</div>
+            <img id="duel-img" class="hub-img" style="display:none;">
+            <div class="hub-q" id="duel-q">...</div>
+        </div>
+
+        <div class="p-zone p1" id="area-p1">
+            <div class="p-info">
+                <div class="p-score" id="s1">0</div>
+                <div class="p-lives" id="l1">❤️❤️❤️</div>
+            </div>
+            <div class="duel-opts" id="opt-p1"></div>
+        </div>
+
+        <div class="p-zone p2" id="area-p2">
+            <div class="p-info">
+                <div class="p-score" id="s2">0</div>
+                <div class="p-lives" id="l2">❤️❤️❤️</div>
+            </div>
+            <div class="duel-opts" id="opt-p2"></div>
+        </div>
+    </div>
+
+</div>
+
+<div id="modal" class="modal">
+    <div class="modal-box">
+        <div id="m-icon" style="font-size:70px; margin-bottom:10px;">🏆</div>
+        <h2 id="m-title" style="margin:0; color:var(--text-main);">Judul</h2>
+        <p id="m-msg" style="color:var(--text-sub);">Pesan</p>
+        <button id="m-btn" class="btn-modal">Lanjut</button>
+        <button onclick="goHome()" class="btn-modal" style="background:var(--border); color:var(--text-sub); margin-top:10px;">Menu Utama</button>
+    </div>
+</div>
+
+<audio id="bgm" loop></audio>
+<audio id="sfx-ok" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
+<audio id="sfx-err" src="https://actions.google.com/sounds/v1/cartoon/clank_car_crash.ogg"></audio>
+<audio id="sfx-win" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
+
+<script>
+    // === DATABASE KOSAKATA 50++ ===
+    const DB = {
+        urut: [
+            {q: "Urutkan", a: ["ا", "ب", "ت"], type: "seq", hint: "Alif - Ba - Ta"},
+            {q: "Lanjutkan", a: ["ث", "ج", "ح"], type: "seq", hint: "Tsa - Jim - Ha"},
+            {q: "Lanjutkan", a: ["خ", "د", "ذ"], type: "seq", hint: "Kho - Dal - Dzal"},
+            {q: "Lanjutkan", a: ["ر", "ز", "س"], type: "seq", hint: "Ro - Zai - Sin"},
+            {q: "Lanjutkan", a: ["ش", "ص", "ض"], type: "seq", hint: "Syin - Shod - Dhod"},
+            {q: "Lanjutkan", a: ["ط", "ظ", "ع"], type: "seq", hint: "Tho - Zho - 'Ain"}
+        ],
+        harakat: [
+            {q: "Bunyi 'BA'", a: "بَ", opts: ["بَ","بِ","بُ"], type: "choice", hint: "Fathah (a)"},
+            {q: "Bunyi 'JI'", a: "جِ", opts: ["جَ","جِ","جُ"], type: "choice", hint: "Kasrah (i)"},
+            {q: "Bunyi 'TU'", a: "تُ", opts: ["تَ","تِ","تُ"], type: "choice", hint: "Dammah (u)"},
+            {q: "Bunyi 'SA'", a: "سَ", opts: ["سَ","سِ","سُ"], type: "choice", hint: "Fathah (a)"},
+            {q: "Bunyi 'NU'", a: "نُ", opts: ["نَ","نِ","نُ"], type: "choice", hint: "Dammah (u)"}
+        ],
+        kata: [
+            // Salam
+            {q:"Halo", a:["مَ","رْ","حَ","بً","ا"], type:"seq", hint:"Mar-ha-ban"},
+            {q:"Selamat Pagi", a:["صَ","بَ","ا","حُ"], type:"seq", hint:"Sho-ba-hu"},
+            {q:"Terima Kasih", a:["شُ","كْ","رً","ا"], type:"seq", hint:"Syuk-ron"},
+            {q:"Sama-sama", a:["عَ","فْ","وً","ا"], type:"seq", hint:"Af-wan"},
+            // Angka (Fixed Image 1)
+            {q:"Satu", a:["وَ","ا","حِ","دٌ"], type:"seq", hint:"Wa-hid", img:"https://cdn-icons-png.flaticon.com/512/3570/3570095.png"},
+            {q:"Dua", a:["اِ","ثْ","نَ","ا","نِ"], type:"seq", hint:"Its-nan", img:"https://cdn-icons-png.flaticon.com/512/3570/3570098.png"},
+            {q:"Tiga", a:["ثَ","لَ","ا","ثَ","ةٌ"], type:"seq", hint:"Tsa-la-tsah", img:"https://cdn-icons-png.flaticon.com/512/3570/3570100.png"},
+            {q:"Empat", a:["أَ","رْ","بَ","عَ","ةٌ"], type:"seq", hint:"Ar-ba-'ah", img:"https://cdn-icons-png.flaticon.com/512/3570/3570101.png"},
+            {q:"Lima", a:["خَ","مْ","سَ","ةٌ"], type:"seq", hint:"Kham-sah", img:"https://cdn-icons-png.flaticon.com/512/3570/3570102.png"},
+            // Sekolah
+            {q:"Sekolah", a:["مَ","دْ","رَ","سَ","ةٌ"], type:"seq", hint:"Mad-ra-sah", img:"https://cdn-icons-png.flaticon.com/512/167/167707.png"},
+            {q:"Kelas", a:["فَ","صْ","لٌ"], type:"seq", hint:"Fasl", img:"https://cdn-icons-png.flaticon.com/512/2930/2930338.png"},
+            {q:"Buku", a:["كِ","تَ","ا","بٌ"], type:"seq", hint:"Ki-tab", img:"https://cdn-icons-png.flaticon.com/512/3330/3330314.png"},
+            {q:"Pena", a:["قَ","لَ","مٌ"], type:"seq", hint:"Qo-lam", img:"https://cdn-icons-png.flaticon.com/512/1250/1250925.png"},
+            {q:"Kursi", a:["كُ","رْ","سِ","يٌّ"], type:"seq", hint:"Kur-siy", img:"https://cdn-icons-png.flaticon.com/512/2603/2603723.png"},
+            {q:"Tas", a:["حَ","قِ","ي","بَ","ةٌ"], type:"seq", hint:"Ha-qi-bah", img:"https://cdn-icons-png.flaticon.com/512/2883/2883393.png"},
+            // Keluarga
+            {q:"Ayah", a:["أَ","بٌ"], type:"seq", hint:"A-bun", img:"https://cdn-icons-png.flaticon.com/512/3048/3048122.png"},
+            {q:"Ibu", a:["أُ","مٌّ"], type:"seq", hint:"Um-mun", img:"https://cdn-icons-png.flaticon.com/512/2922/2922561.png"},
+            {q:"Kakek", a:["جَ","دٌّ"], type:"seq", hint:"Jad-dun", img:"https://cdn-icons-png.flaticon.com/512/4825/4825015.png"},
+            {q:"Nenek", a:["جَ","دَّ","ةٌ"], type:"seq", hint:"Jad-da-tun", img:"https://cdn-icons-png.flaticon.com/512/4825/4825044.png"},
+            // Buah & Hewan
+            {q:"Apel", a:["تُ","فَّ","ا","حٌ"], type:"seq", hint:"Tuf-fah", img:"https://cdn-icons-png.flaticon.com/512/415/415733.png"},
+            {q:"Jeruk", a:["بُ","رْ","تُ","قَ","ا","لٌ"], type:"seq", hint:"Bur-tu-qol", img:"https://cdn-icons-png.flaticon.com/512/135/135695.png"},
+            {q:"Kucing", a:["قِ","طٌّ"], type:"seq", hint:"Qit-thun", img:"https://cdn-icons-png.flaticon.com/512/616/616430.png"},
+            {q:"Ikan", a:["سَ","مَ","كٌ"], type:"seq", hint:"Sa-mak", img:"https://cdn-icons-png.flaticon.com/512/2905/2905392.png"},
+            {q:"Unta", a:["جَ","مَ","لٌ"], type:"seq", hint:"Ja-mal", img:"https://cdn-icons-png.flaticon.com/512/616/616468.png"},
+            // Kata Kerja
+            {q:"Membaca", a:["يَ","قْ","رَ","أُ"], type:"seq", hint:"Yaq-ro-'u"},
+            {q:"Menulis", a:["يَ","كْ","تُ","بُ"], type:"seq", hint:"Yak-tubu"},
+            {q:"Duduk", a:["يَ","جْ","لِ","سُ"], type:"seq", hint:"Yaj-lisu"}
+        ],
+        // Duel Full Kosakata
+        duel: [
+            {q:"BUKU", a:"كِتَابٌ", opts:["كِتَابٌ","قَلَمٌ","بَابٌ"], img:"https://cdn-icons-png.flaticon.com/512/3330/3330314.png"},
+            {q:"PENA", a:"قَلَمٌ", opts:["قَلَمٌ","كِتَابٌ","مَكْتَبٌ"], img:"https://cdn-icons-png.flaticon.com/512/1250/1250925.png"},
+            {q:"KURSI", a:"كُرْسِيٌّ", opts:["كُرْسِيٌّ","مَكْتَبٌ","بَابٌ"], img:"https://cdn-icons-png.flaticon.com/512/2603/2603723.png"},
+            {q:"SATU", a:"وَاحِدٌ", opts:["وَاحِدٌ","اِثْنَانِ","ثَلَاثَةٌ"], img:"https://cdn-icons-png.flaticon.com/512/3570/3570095.png"},
+            {q:"LIMA", a:"خَمْسَةٌ", opts:["خَمْسَةٌ","سِتَّةٌ","سَبْعَةٌ"], img:"https://cdn-icons-png.flaticon.com/512/3570/3570102.png"},
+            {q:"SEKOLAH", a:"مَدْرَسَةٌ", opts:["مَدْرَسَةٌ","فَصْلٌ","بَيْتٌ"], img:"https://cdn-icons-png.flaticon.com/512/167/167707.png"},
+            {q:"KUCING", a:"قِطٌّ", opts:["قِطٌّ","كَلْبٌ","سَمَكٌ"], img:"https://cdn-icons-png.flaticon.com/512/616/616430.png"},
+            {q:"APEL", a:"تُفَّاحٌ", opts:["تُفَّاحٌ","مَوْزٌ","عِنَبٌ"], img:"https://cdn-icons-png.flaticon.com/512/415/415733.png"},
+            {q:"AYAH", a:"أَبٌ", opts:["أَبٌ","أُمٌّ","أَخٌ"], img:"https://cdn-icons-png.flaticon.com/512/3048/3048122.png"},
+            {q:"IBU", a:"أُمٌّ", opts:["أُمٌّ","أَبٌ","أُخْتٌ"], img:"https://cdn-icons-png.flaticon.com/512/2922/2922561.png"},
+            {q:"TAS", a:"حَقِيْبَةٌ", opts:["حَقِيْبَةٌ","كِتَابٌ","قَلَمٌ"], img:"https://cdn-icons-png.flaticon.com/512/2883/2883393.png"}
+        ]
+    };
+
+    // VARIABLES
+    let mode='', lvl=0, lives=3, timer=30, tmrInt, duelInt;
+    let s1=0, s2=0, l1=3, l2=3, duelQ=null, duelLock=false;
+    let userSeq=[];
+
+    // --- SYSTEM ---
+    function toggleTheme() { document.body.classList.toggle('dark-mode'); }
+    
+    function show(id) {
+        document.querySelectorAll('.screen').forEach(e => e.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        const isMenu = id === 'menu-screen';
+        document.getElementById('btn-home').style.display = isMenu ? 'none' : 'flex';
+        document.getElementById('btn-back').style.display = isMenu ? 'none' : 'flex';
+    }
+
+    function goHome() {
+        clearInterval(tmrInt); clearInterval(duelInt);
+        document.getElementById('modal').style.display='none';
+        show('menu-screen');
+    }
+    function goBack() { goHome(); }
+
+    let musicIdx=0; const musics=["","musik1.mp3","musik2.mp3"];
+    function toggleMusic(val) {
+        const bgm = document.getElementById('bgm');
+        if(!val) bgm.pause(); else { bgm.src=val; bgm.volume=0.3; bgm.play().catch(()=>{}); }
+    }
+
+    // --- FUNGSI SHUFFLE ---
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    // --- SOLO GAME (FIXED RTL) ---
+    function startSolo(cat) {
+        mode=cat; lvl=0; lives=3; 
+        if(DB[cat]) shuffleArray(DB[cat]); // Acak soal
+        show('solo-screen'); loadSolo();
+    }
+
+    function loadSolo() {
+        if(!DB[mode] || lvl>=DB[mode].length) return modal(true,"HEBAT!","Semua level selesai",goHome);
+        const d = DB[mode][lvl];
+        userSeq=[];
+        
+        document.getElementById('solo-lives').innerText="❤️".repeat(lives);
+        document.getElementById('solo-lvl').innerText=lvl+1;
+        document.getElementById('q-latin').innerText=d.q;
+        document.getElementById('q-arab').innerText=""; 
+
+        const hBox = document.getElementById('q-hint');
+        if(d.hint) { hBox.style.display='inline-block'; hBox.innerText="💡 "+d.hint; } else hBox.style.display='none';
+        
+        const iBox = document.getElementById('q-img');
+        if(d.img) { iBox.style.display='block'; iBox.src=d.img; } else iBox.style.display='none';
+
+        // Slots RTL (Kanan ke Kiri)
+        const slots = document.getElementById('solo-slots');
+        slots.innerHTML='';
+        if(d.type==='seq') d.a.forEach(()=> slots.innerHTML += `<div class="slot"></div>`);
+
+        // Keys
+        const keys = document.getElementById('solo-keys');
+        keys.innerHTML='';
+        let list = d.type==='choice' ? [...d.opts] : [...d.a];
+        list.sort(()=>0.5-Math.random());
+        list.forEach(c => {
+            let b = document.createElement('button');
+            b.className='key'; b.innerText=c;
+            b.onclick=()=>checkSolo(c,b,d);
+            keys.appendChild(b);
+        });
+
+        resetSoloTmr();
+    }
+
+    function checkSolo(ans, btn, d) {
+        document.getElementById('sfx-ok').play();
+        if(d.type==='choice') {
+            if(ans===d.a) winSolo(); else failSolo(btn);
+        } else {
+            // Logic: Dari Kiri ke Kanan (Index 0,1,2...)
+            // Kita balik target array (d.a) agar index 0 adalah huruf paling kanan.
+            // d.a asli: ["Kaf", "Ta", "Alif", "Ba"] (Urutan nulis dari kanan)
+            // Jadi kalau di array JS: index 0 itu huruf pertama (Kanan).
+            // Tapi kita mau user isi slot dari kiri ke kanan.
+            // Slot kiri = Index 0 (Visual).
+            // Berarti slot 0 harus diisi huruf TERAKHIR dari kata Arab (Ba).
+            // Jadi kita harus mencocokkan dengan REVERSE array.
+            
+            let target = [...d.a].reverse();
+            let idx = userSeq.length;
+            
+            if(ans === target[idx]) {
+                userSeq.push(ans);
+                btn.style.visibility='hidden';
+                let slot = document.getElementsByClassName('slot')[idx];
+                slot.innerText=ans; slot.classList.add('filled');
+                if(userSeq.length===d.a.length) winSolo();
+            } else failSolo(btn);
+        }
+    }
+
+    function failSolo(btn) {
+        document.getElementById('sfx-err').play();
+        btn.style.background="var(--p1-text)"; btn.style.color="white";
+        setTimeout(()=>{btn.style.background="var(--bg-card)"; btn.style.color="var(--text-main)";},300);
+        lives--;
+        document.getElementById('solo-lives').innerText="❤️".repeat(lives);
+        if(lives<=0) { clearInterval(tmrInt); modal(false,"YAH KALAH","Nyawa Habis",goHome); }
+    }
+
+    function winSolo() {
+        clearInterval(tmrInt);
+        document.getElementById('sfx-win').play();
+        confetti({particleCount:100, origin:{y:0.6}});
+        setTimeout(()=> modal(true,"BENAR!","Lanjut?",()=>{lvl++; loadSolo();}), 500);
+    }
+
+    function resetSoloTmr() {
+        clearInterval(tmrInt); timer=30;
+        const bar = document.getElementById('solo-bar');
+        const txt = document.getElementById('solo-time-txt');
+        bar.style.width='100%';
+        txt.innerText = timer;
+        
+        tmrInt = setInterval(()=>{
+            timer--; 
+            bar.style.width=(timer/30*100)+'%';
+            txt.innerText = timer;
+            if(timer<=0) { clearInterval(tmrInt); modal(false,"WAKTU HABIS","Coba lagi",()=>loadSolo()); }
+        },1000);
+    }
+
+    // --- DUEL ---
+    function preStartDuel() {
+        s1=0; s2=0; l1=3; l2=3;
+        show('duel-screen');
+        document.getElementById('s1').innerText=0;
+        document.getElementById('s2').innerText=0;
+        document.getElementById('l1').innerText="❤️❤️❤️";
+        document.getElementById('l2').innerText="❤️❤️❤️";
+        document.getElementById('area-p1').classList.remove('flash-red');
+        document.getElementById('area-p2').classList.remove('flash-red');
+        
+        shuffleArray(DB.duel); // Acak soal duel
+        startCD();
+    }
+
+    function startCD() {
+        const ov = document.getElementById('cd-overlay');
+        const txt = document.getElementById('cd-txt');
+        ov.style.display='flex';
+        let c=3; txt.innerText=c;
+        let int = setInterval(()=>{
+            c--; 
+            if(c>0) {
+                txt.innerText=c; 
+                txt.style.color = c===1 ? "var(--p1-text)" : "var(--primary)";
+            } else { 
+                txt.innerText="MULAI!";
+                txt.style.color = "var(--accent)";
+                setTimeout(()=>{ clearInterval(int); ov.style.display='none'; nextDuel(); }, 1000);
+            }
+        },1000);
+    }
+
+    function nextDuel() {
+        if(s1>=10) return modal(true,"MERAH MENANG!","Selamat P1",goHome);
+        if(s2>=10) return modal(true,"BIRU MENANG!","Selamat P2",goHome);
+        if(l1<=0) return modal(true,"BIRU MENANG!","Merah Gugur",goHome);
+        if(l2<=0) return modal(true,"MERAH MENANG!","Biru Gugur",goHome);
+
+        duelLock=false;
+        duelQ = DB.duel[Math.floor(Math.random()*DB.duel.length)];
+        document.getElementById('duel-q').innerText = duelQ.q;
+        
+        const img = document.getElementById('duel-img');
+        if(duelQ.img) { img.style.display='block'; img.src=duelQ.img; } else img.style.display='none';
+
+        let opts = [duelQ.a];
+        while(opts.length<3) {
+            let r = DB.duel[Math.floor(Math.random()*DB.duel.length)].a;
+            if(!opts.includes(r)) opts.push(r);
+        }
+        opts.sort(()=>0.5-Math.random());
+
+        renderD('opt-p1', 1, opts);
+        renderD('opt-p2', 2, opts);
+        startDuelTmr();
+    }
+
+    function startDuelTmr() {
+        clearInterval(duelInt); let t = 10;
+        const disp = document.getElementById('duel-timer');
+        disp.innerText=t;
+        duelInt = setInterval(()=>{
+            t--; disp.innerText=t;
+            if(t<=0) { clearInterval(duelInt); nextDuel(); }
+        },1000);
+    }
+
+    function renderD(id, p, opts) {
+        const div = document.getElementById(id);
+        div.innerHTML='';
+        opts.forEach(t=>{
+            let b = document.createElement('button');
+            b.className='d-btn'; b.innerText=t;
+            const act = ()=> checkDuel(p, t, b);
+            b.onmousedown=act; b.ontouchstart=(e)=>{e.preventDefault(); act();}
+            div.appendChild(b);
+        });
+    }
+
+    function checkDuel(p, ans, btn) {
+        if(duelLock) return;
+        if(ans === duelQ.a) {
+            duelLock=true; clearInterval(duelInt);
+            document.getElementById('sfx-ok').play();
+            btn.classList.add('correct');
+            if(p===1) s1++; else s2++;
+            document.getElementById('s1').innerText=s1;
+            document.getElementById('s2').innerText=s2;
+            setTimeout(nextDuel, 1000);
+        } else {
+            document.getElementById('sfx-err').play();
+            btn.classList.add('wrong');
+            btn.disabled=true;
+            if(p===1) {
+                l1--; document.getElementById('l1').innerText="❤️".repeat(l1);
+                document.getElementById('area-p1').classList.add('flash-red');
+                setTimeout(()=>document.getElementById('area-p1').classList.remove('flash-red'),300);
+            } else {
+                l2--; document.getElementById('l2').innerText="❤️".repeat(l2);
+                document.getElementById('area-p2').classList.add('flash-red');
+                setTimeout(()=>document.getElementById('area-p2').classList.remove('flash-red'),300);
+            }
+            if(l1<=0 || l2<=0) { duelLock=true; clearInterval(duelInt); setTimeout(nextDuel, 500); }
+        }
+    }
+
+    function modal(win,t,m,cb) {
+        const el = document.getElementById('modal');
+        el.style.display='flex';
+        document.getElementById('m-title').innerText=t;
+        document.getElementById('m-msg').innerText=m;
+        document.getElementById('m-icon').innerText=win?"🏆":"😓";
+        document.getElementById('m-btn').onclick=()=>{ el.style.display='none'; cb(); };
+    }
+
+    // INIT
+    show('menu-screen');
+</script>
+</body>
+</html>
